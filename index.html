@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistemas Navieros Integrados</title>
+    <!-- Librerías OCR y Captura de Imagen -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 30px;
+            background-color: #fafafa;
+            color: #2c3e50;
+        }
+        .seccion-contenedor {
+            background-color: #fff;
+            padding: 25px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        h2 {
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        .subtitulo {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .control-panel {
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 22px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s;
+            margin-right: 10px;
+        }
+        .upload-btn { background-color: #2ecc71; color: white; }
+        .upload-btn:hover { background-color: #27ae60; }
+        .download-btn { background-color: #34495e; color: white; }
+        .download-btn:hover { background-color: #2c3e50; }
+        
+        .btn-copy {
+            background-color: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-copy:hover { background-color: #16a085; }
+        
+        .status-msg {
+            margin-top: 12px;
+            font-weight: 500;
+            color: #7f8c8d;
+            font-size: 13px;
+        }
+        
+        .excel-container {
+            overflow-x: auto;
+            background-color: white;
+            padding: 15px;
+            border: 1px solid #e1e8ed;
+            border-radius: 6px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 1150px;
+            font-size: 13px;
+            text-align: center;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid #cfd8dc;
+            padding: 12px 6px;
+            color: #37474f;
+            vertical-align: middle;
+        }
+        
+        .header-principal { 
+            background-color: #34495e; 
+            color: white; 
+            font-size: 16px; 
+            font-weight: 600; 
+            text-align: left; 
+            padding-left: 15px;
+            height: 40px;
+        }
+        .header-fecha { 
+            background-color: #f8f9fa; 
+            color: #2c3e50; 
+            font-size: 16px; 
+            font-weight: 600; 
+            text-align: center;
+        }
+        
+        .col-gris { background-color: #f8f9fa; font-weight: 600; color: #495057; }
+        .cat-seccion { background-color: #f1f3f5; font-weight: 600; color: #495057; font-size: 12px; }
+        
+        .total-fila { font-weight: bold; background-color: #f8f9fa; color: #212529; }
+        .total-general { font-weight: bold; background-color: #e9ecef; color: #212529; }
+        
+        td[contenteditable="true"]:focus {
+            background-color: #fff9db;
+            outline: none;
+        }
+
+        .resultado-box {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 4px;
+            padding: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            display: none;
+        }
+
+        .debug-panel {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #e9ecef;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= SECCIÓN 1: REPORTE GENERAL NAVIERO ================= -->
+    <div class="seccion-contenedor">
+        <h2>Procesador de Reporte General</h2>
+        <p class="subtitulo">Diseño Minimalista Estructurado - Exportación garantizada sin cortes de texto</p>
+        
+        <div class="control-panel">
+            <input type="file" id="fileInputGeneral" accept="image/*" style="display:none" onchange="procesarTicketGeneral(this.files[0])">
+            <button class="btn upload-btn" onclick="document.getElementById('fileInputGeneral').click()">📷 Cargar Ticket General</button>
+            <button class="btn download-btn" onclick="exportarTablaAImagen()">🖼️ Guardar como Imagen</button>
+            <div id="statusGeneral" class="status-msg">Esperando lectura de imagen...</div>
+        </div>
+
+        <div class="excel-container" id="contenedorExcel">
+            <table id="tablaReporte">
+                <thead>
+                    <tr>
+                        <th colspan="8" class="header-principal">PLAYA DEL CARMEN - FECHA:</th>
+                        <th colspan="7" class="header-fecha" id="txtFecha">--/--/----</th>
+                    </tr>
+                    <tr class="sub-header">
+                        <th class="col-gris" style="width: 90px;">Barco</th>
+                        <th class="col-gris" style="width: 60px;">HRS</th>
+                        <th class="cat-seccion">Turista (AR)</th>
+                        <th class="cat-seccion">Turista (MR)</th>
+                        <th class="cat-seccion">Q.Roo (AR)</th>
+                        <th class="cat-seccion">Q.Roo (MR)</th>
+                        <th class="cat-seccion">Local (AR)</th>
+                        <th class="cat-seccion">Local (MR)</th>
+                        <th class="cat-seccion">INSEN (ILR)</th>
+                        <th class="cat-seccion">Cortesia (CR)</th>
+                        <th class="col-gris" style="width: 70px;">Total</th>
+                        <th class="col-gris" style="width: 60px;">AFI</th>
+                        <th class="col-gris" style="width: 80px;">Total Gral</th>
+                        <th class="col-gris" style="width: 75px;">Infantes</th>
+                        <th class="col-gris" style="width: 100px;" data-html2canvas-ignore="true">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla">
+                    <!-- Filas dinámicas -->
+                </tbody>
+            </table>
+        </div>
+
+        <h4 style="font-weight: 500; color: #495057; margin-bottom: 5px;">Texto extraído General (OCR):</h4>
+        <div class="debug-panel" id="debugTextGeneral">Ninguna imagen procesada aún en la tabla general.</div>
+    </div>
+
+
+    <!-- ================= SECCIÓN 2: GENERADOR DE REPORTE CHICO ================= -->
+    <div class="seccion-contenedor">
+        <h2>Procesador de Reporte Chico</h2>
+        <p class="subtitulo">Lee el ticket digital individual y genera el formato de texto directo para WhatsApp</p>
+        
+        <div class="control-panel">
+            <input type="file" id="fileInputChico" accept="image/*" style="display:none" onchange="procesarTicketChico(this.files[0])">
+            <button class="btn upload-btn" style="background-color: #9b59b6;" onclick="document.getElementById('fileInputChico').click()">📷 Cargar Ticket Individual</button>
+            <button class="btn download-btn" id="btnCopiarChico" style="display:none;" onclick="copyReporteChicoDirecto()">📋 Copiar Reporte Chico</button>
+            <div id="statusChico" class="status-msg">Esperando imagen para reporte chico...</div>
+        </div>
+
+        <div class="resultado-box" id="resultadoTextoChico"></div>
+    </div>
+
+
+    <script>
+        // Inicializar Fecha
+        const hoy = new Date();
+        document.getElementById('txtFecha').textContent = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
+
+        let textoGlobalReporteChico = "";
+
+        // --- LÓGICA SECCIÓN 1: REPORTE GENERAL ---
+        async function procesarTicketGeneral(file) {
+            if (!file) return;
+
+            const status = document.getElementById('statusGeneral');
+            const debugText = document.getElementById('debugTextGeneral');
+            status.innerHTML = "<span style='color: #34495e;'>⚙️ Analizando imagen...</span>";
+
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'spa');
+                debugText.textContent = text;
+                
+                let datosFila = {
+                    barco: "Xcaret", hrs: "12:00",
+                    art: 0, mrt: 0, arq: 0, mrq: 0, arl: 0, mrl: 0,
+                    ilr: 0, cr: 0, afi: 0, infantes: 0
+                };
+
+                const lineas = text.split('\n').map(l => l.toUpperCase().trim()).filter(l => l.length > 0);
+                
+                let yaTieneTuristaAdulto = false;
+                let yaTieneLocalAdulto = false;
+
+                lineas.forEach(l => {
+                    if (l.includes("XEL") || l.includes("HÁ")) datosFila.barco = "Xel-Há";
+                    else if (l.includes("XCARET")) datosFila.barco = "Xcaret";
+                    else if (l.includes("CANCUN") || l.includes("CANCÚN")) datosFila.barco = "Cancun";
+                    else if (l.includes("COZUMEL")) datosFila.barco = "Cozumel";
+                    else if (l.includes("CONTOY")) datosFila.barco = "Contoy";
+
+                    const regexHora = l.match(/\d{2}:\d{2}/);
+                    if (regexHora) datosFila.hrs = regexHora[0];
+                });
+
+                for (let i = 0; i < lineas.length; i++) {
+                    let l = lineas[i];
+                    const numMatch = l.match(/\d+/);
+                    if (!numMatch) continue;
+                    
+                    const cant = parseInt(numMatch[0], 10);
+
+                    if (l.includes("INFANTE")) {
+                        datosFila.infantes += cant;
+                        continue;
+                    }
+
+                    if (l.includes("TURISTA")) {
+                        if (!yaTieneTuristaAdulto) {
+                            datosFila.art = cant;
+                            yaTieneTuristaAdulto = true;
+                        } else {
+                            datosFila.mrt = cant;
+                        }
+                    }
+                    else if (l.includes("LOCAL")) {
+                        if (!yaTieneLocalAdulto) {
+                            datosFila.arl = cant;
+                            yaTieneLocalAdulto = true;
+                        } else {
+                            datosFila.mrl = cant;
+                        }
+                    }
+                    else if (l.includes("Q.ROO") || l.includes("QUINTANARROENSE") || l.includes("ROO")) {
+                        let esDeMenor = false;
+                        for(let j = Math.max(0, i-4); j <= i; j++){
+                            if(lineas[j].includes("MENOR")) { esDeMenor = true; break; }
+                        }
+                        if (!esDeMenor) { datosFila.arq += cant; } else { datosFila.mrq += cant; }
+                    }
+                    else if (l.includes("INAPAM") || l.includes("INSEN")) {
+                        datosFila.ilr += cant;
+                    }
+                    else if (l.includes("CORTESIA") || l.includes("CORTESÍA")) {
+                        datosFila.cr += cant;
+                    }
+                    else if (l.includes("AFI")) {
+                        datosFila.afi += cant;
+                    }
+                }
+
+                const totalDirecto = datosFila.art + datosFila.mrt + datosFila.arq + datosFila.mrq + datosFila.arl + datosFila.mrl + datosFila.ilr + datosFila.cr;
+                const totalGeneral = totalDirecto + datosFila.afi;
+
+                const tbody = document.getElementById('cuerpoTabla');
+                const nuevaFila = tbody.insertRow();
+
+                nuevaFila.innerHTML = `
+                    <td contenteditable="true">${datosFila.barco}</td>
+                    <td contenteditable="true">${datosFila.hrs}</td>
+                    <td contenteditable="true">${datosFila.art || '0'}</td>
+                    <td contenteditable="true">${datosFila.mrt || '0'}</td>
+                    <td contenteditable="true">${datosFila.arq || '0'}</td>
+                    <td contenteditable="true">${datosFila.mrq || '0'}</td>
+                    <td contenteditable="true">${datosFila.arl || '0'}</td>
+                    <td contenteditable="true">${datosFila.mrl || '0'}</td>
+                    <td contenteditable="true">${datosFila.ilr || '0'}</td>
+                    <td contenteditable="true">${datosFila.cr || '0'}</td>
+                    <td class="total-fila">${totalDirecto || '0'}</td>
+                    <td contenteditable="true" oninput="recalcularTotalesFila(this)">${datosFila.afi || '0'}</td>
+                    <td class="total-general">${totalGeneral || '0'}</td>
+                    <td contenteditable="true">${datosFila.infantes || '0'}</td>
+                    <td data-html2canvas-ignore="true">
+                        <button class="btn-copy" onclick="generarReporteChicoDesdeTabla(this)">📋 Copiar Chico</button>
+                    </td>
+                `;
+
+                status.innerHTML = "<span style='color: #2ecc71;'>✓ Fila procesada con éxito.</span>";
+
+            } catch (err) {
+                console.error(err);
+                status.innerHTML = "<span style='color: #e74c3c;'>❌ Error al procesar la imagen.</span>";
+            }
+        }
+
+        function recalcularTotalesFila(elemento) {
+            const fila = elemento.parentElement;
+            const celdas = fila.getElementsByTagName('td');
+            
+            const art = parseInt(celdas[2].textContent) || 0;
+            const mrt = parseInt(celdas[3].textContent) || 0;
+            const arq = parseInt(celdas[4].textContent) || 0;
+            const mrq = parseInt(celdas[5].textContent) || 0;
+            const arl = parseInt(celdas[6].textContent) || 0;
+            const mrl = parseInt(celdas[7].textContent) || 0;
+            const ilr = parseInt(celdas[8].textContent) || 0;
+            const cr = parseInt(celdas[9].textContent) || 0;
+            const afi = parseInt(celdas[11].textContent) || 0;
+
+            const nuevoDirecto = art + mrt + arq + mrq + arl + mrl + ilr + cr;
+            celdas[10].textContent = nuevoDirecto;
+            celdas[12].textContent = (nuevoDirecto + afi);
+        }
+
+        function generarReporteChicoDesdeTabla(btn) {
+            const fila = btn.parentElement.parentElement;
+            const celdas = fila.getElementsByTagName('td');
+
+            const barco = celdas[0].textContent;
+            const horaRegreso = celdas[1].textContent;
+            const art = parseInt(celdas[2].textContent) || 0;
+            const mrt = parseInt(celdas[3].textContent) || 0;
+            const arq = parseInt(celdas[4].textContent) || 0;
+            const mrq = parseInt(celdas[5].textContent) || 0;
+            const arl = parseInt(celdas[6].textContent) || 0;
+            const mrl = parseInt(celdas[7].textContent) || 0;
+            const ilr = parseInt(celdas[8].textContent) || 0;
+            const cr = parseInt(celdas[9].textContent) || 0;
+            const afi = parseInt(celdas[11].textContent) || 0;
+
+            let horaIda = "--:--";
+            const partesHora = horaRegreso.split(":");
+            if (partesHora.length === 2) {
+                let horas = parseInt(partesHora[0], 10) - 1;
+                if (horas < 0) horas = 23;
+                horaIda = (horas < 10 ? '0' + horas : horas) + ":" + partesHora[1];
+            }
+
+            const adultoTurista = art + afi + cr; 
+            const menorTurista = mrt;            
+            const adultoLocal = arq + arl + ilr;  
+            const menorLocal = mrq + mrl;        
+            const totalChico = adultoTurista + menorTurista + adultoLocal + menorLocal;
+
+            const textoReporte = `*CZM PDC*
+EMBARCACIÓN: ${barco}
+HORA: ${horaIda}
+PAX:
+
+*PDC CZM*
+EMBARCACIÓN: ${barco}
+HORA: ${horaRegreso}
+
+ADULTO TURISTA: ${adultoTurista}
+MENOR TURISTA: ${menorTurista}
+ADULTO LOCAL: ${adultoLocal}
+MENOR LOCAL: ${menorLocal}
+TOTAL: ${totalChico}`;
+
+            navigator.clipboard.writeText(textoReporte).then(() => {
+                const status = document.getElementById('statusGeneral');
+                status.innerHTML = `<span style='color: #16a085;'>📋 ¡Reporte Chico de las ${horaRegreso} copiado!</span>`;
+                const originalText = btn.textContent;
+                btn.textContent = "¡Copiado! ✓";
+                btn.style.backgroundColor = "#16a085";
+                setTimeout(() => { btn.textContent = originalText; btn.style.backgroundColor = "#7f8c8d"; }, 2000);
+            });
+        }
+
+        function exportarTablaAImagen() {
+            const contenedor = document.getElementById('contenedorExcel');
+            const status = document.getElementById('statusGeneral');
+            status.innerHTML = "<span style='color: #34495e;'>📸 Generando imagen...</span>";
+            const propiedadOriginal = contenedor.style.overflowX;
+            contenedor.style.overflowX = 'visible';
+
+            html2canvas(contenedor, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
+                contenedor.style.overflowX = propiedadOriginal;
+                const enlace = document.createElement('a');
+                enlace.download = `Reporte_General_${hoy.getDate()}-${hoy.getMonth() + 1}.png`;
+                enlace.href = canvas.toDataURL('image/png');
+                enlace.click();
+                status.innerHTML = "<span style='color: #2ecc71;'>✓ Imagen guardada correctamente.</span>";
+            });
+        }
+
+
+        // --- LÓGICA SECCIÓN 2: REPORTE CHICO INDIVIDUAL ---
+        async function procesarTicketChico(file) {
+            if (!file) return;
+
+            const status = document.getElementById('statusChico');
+            const resultadoBox = document.getElementById('resultadoTextoChico');
+            const btnCopiar = document.getElementById('btnCopiarChico');
+            
+            status.innerHTML = "<span style='color: #34495e;'>⚙️ Leyendo datos del ticket...</span>";
+            resultadoBox.style.display = "none";
+            btnCopiar.style.display = "none";
+
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'spa');
+                
+                let embarcacion = "Xel-Há";
+                let horaRegreso = "20:00";
+                let adultoTurista = 0, menorTurista = 0;
+                let inapam = 0, localAdulto = 0, qroo = 0, quintanarroense = 0, menorLocal = 0;
+
+                const lineas = text.split('\n').map(l => l.toUpperCase().trim()).filter(l => l.length > 0);
+
+                lineas.forEach(l => {
+                    if (l.includes("XCARET")) embarcacion = "Xcaret";
+                    else if (l.includes("CANCUN") || l.includes("CANCÚN")) embarcacion = "Cancun";
+                    else if (l.includes("COZUMEL")) embarcacion = "Cozumel";
+                    else if (l.includes("XEL")) embarcacion = "Xel-Há";
+
+                    const regexHora = l.match(/\d{2}:\d{2}/);
+                    if (regexHora) horaRegreso = regexHora[0];
+                });
+
+                let esSeccionMenor = false;
+                lineas.forEach(l => {
+                    if (l.includes("MENOR")) esSeccionMenor = true;
+
+                    const numMatch = l.match(/\d+/);
+                    if (!numMatch) return;
+                    const valor = parseInt(numMatch[0], 10);
+
+                    if (!esSeccionMenor) {
+                        if (l.includes("INAPAM")) inapam = valor;
+                        else if (l.includes("LOCAL")) localAdulto = valor;
+                        else if (l.includes("Q.ROO")) qroo = valor;
+                        else if (l.includes("QUINTANARROENSE")) quintanarroense = valor;
+                        else if (l.includes("TURISTA")) adultoTurista = valor;
+                    } else {
+                        if (l.includes("LOCAL")) menorLocal = valor;
+                        else if (l.includes("TURISTA")) menorTurista = valor;
+                    }
+                });
+
+                const adultoLocalTotal = inapam + localAdulto + qroo + quintanarroense;
+                const totalGeneral = adultoTurista + menorTurista + adultoLocalTotal + menorLocal;
+
+                let horaIda = "--:--";
+                const partesHora = horaRegreso.split(":");
+                if (partesHora.length === 2) {
+                    let hrs = parseInt(partesHora[0], 10) - 1;
+                    if (hrs < 0) hrs = 23; 
+                    horaIda = (hrs < 10 ? '0' + hrs : hrs) + ":" + partesHora[1];
+                }
+
+                textoGlobalReporteChico = `*CZM PDC*
+EMBARCACIÓN: ${embarcacion}
+HORA: ${horaIda}
+PAX:
+
+*PDC CZM*
+EMBARCACIÓN: ${embarcacion}
+HORA: ${horaRegreso}
+
+ADULTO TURISTA: ${adultoTurista}
+MENOR TURISTA: ${menorTurista}
+ADULTO LOCAL: ${adultoLocalTotal}
+MENOR LOCAL: ${menorLocal}
+TOTAL: ${totalGeneral}`;
+
+                resultadoBox.textContent = textoGlobalReporteChico;
+                resultadoBox.style.display = "block";
+                btnCopiar.style.display = "inline-block";
+                status.innerHTML = "<span style='color: #2ecc71;'>✓ ¡Reporte Chico generado con éxito!</span>";
+
+            } catch (err) {
+                console.error(err);
+                status.innerHTML = "<span style='color: #e74c3c;'>❌ Error al leer la imagen.</span>";
+            }
+        }
+
+        function copyReporteChicoDirecto() {
+            navigator.clipboard.writeText(textoGlobalReporteChico).then(() => {
+                const btn = document.getElementById('btnCopiarChico');
+                btn.textContent = "¡Copiado con éxito! ✓";
+                btn.style.backgroundColor = "#16a085";
+                setTimeout(() => {
+                    btn.textContent = "📋 Copiar Reporte Chico";
+                    btn.style.backgroundColor = "#34495e";
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

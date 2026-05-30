@@ -173,19 +173,18 @@
 <body>
 
     <div class="seccion-contenedor">
-        <h2>Procesador de Reporte General</h2>
-        <p class="subtitulo">Diseño Estructurado - Soporta tickets divididos en múltiples imágenes</p>
+        <h2>Reporte General</h2>
         
         <div class="control-panel">
             <input type="file" id="fileInputGeneral" accept="image/*" style="display:none" onchange="procesarTicketGeneral(this.files[0])">
-            <button class="btn upload-btn" onclick="document.getElementById('fileInputGeneral').click()">📷 Cargar Ticket General</button>
+            <button class="btn upload-btn" onclick="document.getElementById('fileInputGeneral').click()">📷 Seleccionar imagen</button>
             
             <label class="mode-container">
                 <input type="checkbox" id="chkSumarModo"> ➕ Sumar datos a la última fila
             </label>
 
             <button class="btn download-btn" onclick="exportarTablaAImagen()">🖼️ Guardar como Imagen</button>
-            <button class="btn clear-btn" onclick="limpiarTablaGeneral()">¼ Reiniciar Tabla</button>
+            <button class="btn clear-btn" onclick="limpiarTablaGeneral()">Reiniciar Tabla</button>
             
             <div id="statusGeneral" class="status-msg">Esperando lectura de imagen...</div>
         </div>
@@ -226,14 +225,13 @@
 
 
     <div class="seccion-contenedor">
-        <h2>Procesador de Reporte Chico</h2>
-        <p class="subtitulo">Lee el ticket digital individual y genera el formato de texto directo para WhatsApp</p>
+        <h2>Reporte Navega</h2>
         
         <div class="control-panel">
             <input type="file" id="fileInputChico" accept="image/*" style="display:none" onchange="procesarTicketChico(this.files[0])">
             <button class="btn upload-btn" style="background-color: #9b59b6;" onclick="document.getElementById('fileInputChico').click()">📷 Cargar Ticket Individual</button>
             <button class="btn download-btn" id="btnCopiarChico" style="display:none;" onclick="copyReporteChicoDirecto()">📋 Copiar Reporte Chico</button>
-            <div id="statusChico" class="status-msg">Esperando imagen para reporte chico...</div>
+            <div id="statusChico" class="status-msg">Esperando imagen para reporte Navega...</div>
         </div>
 
         <div class="resultado-box" id="resultadoTextoChico"></div>
